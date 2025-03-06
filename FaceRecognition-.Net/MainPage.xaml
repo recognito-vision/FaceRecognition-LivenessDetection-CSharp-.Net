@@ -1,0 +1,158 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="FaceRecognition_.Net.MainPage">
+
+    <ScrollView>
+        <VerticalStackLayout
+            Padding="30,0"
+            Spacing="25">
+            <HorizontalStackLayout HorizontalOptions="Center">
+                <Label
+                    Text="Face Recognition Demo"
+                    Style="{StaticResource Headline}"
+                    SemanticProperties.HeadingLevel="Level1" 
+                    VerticalOptions="Center" 
+                    HorizontalOptions="Center"
+                    Padding="0,20,0,0"/>
+
+            </HorizontalStackLayout>
+
+            <HorizontalStackLayout>
+                <Label
+                    Text="HWID: "
+                    Style="{StaticResource SubHeadline}"
+                    FontSize="16"
+                    VerticalOptions="Center"/>
+
+                <Entry
+                    x:Name="HWIDEntry"
+                    Text=""
+                    Style="{StaticResource SubHeadline}"
+                    FontSize="14"
+                    VerticalOptions="Center" 
+                    Margin="20,0,0,0"
+                    IsReadOnly="True"/>
+
+            </HorizontalStackLayout>
+
+            <HorizontalStackLayout>
+                <Label
+                    Text="Activation Result: "
+                    Style="{StaticResource SubHeadline}"
+                    FontSize="16"
+                    VerticalOptions="Center"/>
+
+                <Entry
+                    x:Name="ActivationStatusEntry"
+                    Text=""
+                    Style="{StaticResource SubHeadline}"
+                    FontSize="14"
+                    VerticalOptions="Center" 
+                    Margin="20,0,0,0"
+                    IsReadOnly="True"/>
+
+            </HorizontalStackLayout>
+
+            <HorizontalStackLayout>
+                <VerticalStackLayout>
+                    <Frame
+                        Padding="0"
+                        BorderColor="Black"
+                        CornerRadius="10"
+                        HasShadow="False"
+                        WidthRequest="320"
+                        HeightRequest="320">
+                        <Image
+                            x:Name="Image1"
+                            HeightRequest="320"
+                            Aspect="AspectFit"
+                            SemanticProperties.Description="default avatar image" />
+                    </Frame>
+                    <Button
+                        x:Name="OpenImageBtn1"
+                        Text="Open Image" 
+                        SemanticProperties.Hint="Recognize face from image"
+                        Clicked="OnClickedSelectFace1Btn"
+                        HorizontalOptions="Center"
+                        BackgroundColor="DarkSlateGray"
+                        WidthRequest="300"
+                        Margin="10,20,10,0"/>
+                </VerticalStackLayout>
+
+                <VerticalStackLayout Margin="20,0,0,0">
+                    <Frame
+                        Padding="0"
+                        BorderColor="Black"
+                        CornerRadius="10"
+                        HasShadow="False"
+                        WidthRequest="320"
+                        HeightRequest="320">
+                        <Image
+                            x:Name="Image2"
+                            HeightRequest="320"
+                            Aspect="AspectFit"
+                            SemanticProperties.Description="default avatar image" />
+                    </Frame>
+                    <Button
+                        x:Name="OpenImageBtn2"
+                        Text="Open Image" 
+                        SemanticProperties.Hint="Recognize face from image"
+                        Clicked="OnClickedSelectFace2Btn"
+                        HorizontalOptions="Center"
+                        BackgroundColor="DarkSlateGray"
+                        WidthRequest="300"
+                        Margin="10,20,10,0"/>
+                </VerticalStackLayout>
+
+
+                <VerticalStackLayout Margin="40,0,0,0">
+                    <Button
+                        x:Name="CompareBtn"
+                        Text="Compare Face" 
+                        SemanticProperties.Hint="Recognize face from image"
+                        Clicked="OnClickedCompareBtn"
+                        VerticalOptions="Start"
+                        BackgroundColor="OrangeRed"
+                        Margin="0,0,0,0"/>
+
+                    <HorizontalStackLayout HorizontalOptions="Center" Margin="0,20,0,20">
+                        <Image
+                          x:Name="Face1"
+                          Source="face.jpg"
+                          HeightRequest="128"
+                          Aspect="AspectFit"
+                          SemanticProperties.Description="default avatar image" />
+
+                        <Image
+                          x:Name="CompareResult"
+                          Source="blank.png"
+                          HeightRequest="48"
+                          Aspect="AspectFit"
+                          Margin="10,0,10,0"
+                          SemanticProperties.Description="default avatar image" />
+                        
+                        <Image
+                          x:Name="Face2"
+                          Source="face.jpg"
+                          HeightRequest="128"
+                          Aspect="AspectFit"
+                          SemanticProperties.Description="default avatar image" />
+                    </HorizontalStackLayout>
+                    
+                    
+                    <Editor 
+                        x:Name="ResultEditor"
+                        Placeholder="Result text"
+                        HeightRequest="250"
+                        WidthRequest="500"
+                        IsReadOnly="True"
+                        Margin="20,0,0,20"/>
+                </VerticalStackLayout>
+                
+            </HorizontalStackLayout>
+
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>
