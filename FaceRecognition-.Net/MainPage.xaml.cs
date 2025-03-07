@@ -9,6 +9,18 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Text.Json;
+using System.Data.SQLite;
+using System.Collections.ObjectModel;
+using System.Security.Cryptography;
+using Microsoft.Maui.ApplicationModel;
+using System.Data.Entity.Core.Metadata.Edm;
+
+enum IMAGE_INDEX
+{
+    MATCH_1 = 0,
+    MATCH_2 = 1,
+    IDENTIFY = 2
+}
 
 public struct DetectionResult
 {
@@ -24,24 +36,25 @@ public struct DetectionResult
         bitmap = new Bitmap(1, 1);
     }
 };
+
 namespace FaceRecognition_.Net
 {
     public partial class MainPage : ContentPage
     {
-        int count = 0;
-        string image_path1;
-        string image_path2;
-        int activateResult = (int)SDK_STATUS.SDK_LICENSE_KEY_ERROR;
-        FaceEngineClass faceSDK = new FaceEngineClass();
+        private int activateResult = (int)SDK_STATUS.SDK_LICENSE_KEY_ERROR;
+        private string[] imagePath = new string[3]; // 0: Image1 for 1to1, 1: Image2 for 1to1, 2: Image3 for 1toN
+        private FaceEngineClass faceSDK = new FaceEngineClass();
+        private DBManager dbManager = new DBManager();
+        public ObservableCollection<User> Users { get; set; }
 
+        private int matchThreshold = 80;
         public MainPage()
         {
             InitializeComponent();
 
             HWIDEntry.Text = faceSDK.GetHardwareId();
-
-            string exeFolder = AppDomain.CurrentDomain.BaseDirectory;
-            string licensePath = Path.Combine(exeFolder, "license.txt");
+            
+            string licensePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "license.txt");
 
             if (File.Exists(licensePath))
             {
@@ -49,123 +62,28 @@ namespace FaceRecognition_.Net
                 activateResult = faceSDK.Activate(licenseText);
             }
             else
-            {
                 ActivationStatusEntry.Text = "Can't find license file!";
-            }
 
-            if (activateResult != (int)SDK_STATUS.SDK_SUCCESS)
-            {
-                ActivationStatusEntry.Text = "Activation failed! Status code: " + activateResult.ToString();
-            }
-            else
+            if (activateResult == (int)SDK_STATUS.SDK_SUCCESS)
             {
                 var dictPath = $"{AppDomain.CurrentDomain.BaseDirectory}assets";
                 int ret = faceSDK.Init(dictPath);
                 if (ret != (int)SDK_STATUS.SDK_SUCCESS)
-                {
                     ActivationStatusEntry.Text = "Failed to init SDK";
-                } 
                 else
-                {
                     ActivationStatusEntry.Text = "Activation Success!";
-                }
             }
+            else
+                ActivationStatusEntry.Text = "Activation failed! Status code: " + activateResult.ToString();
 
-            // *** call async function from sync function
-            // Task task = Task.Run(async () => await LoadMauiAsset());
-            // var fullPath = System.IO.Path.Combine(FileSystem.AppDataDirectory,"MyFolder","myfile.txt");
 
+            dbManager.Create();
+            Users = dbManager.Load();
+
+            BindingContext = this;
         }
 
-        async Task LoadMauiAsset()
-        {
-            using var stream = await FileSystem.OpenAppPackageFileAsync("AboutAssets.txt");
-
-            using var reader = new StreamReader(stream);
-
-            var contents = reader.ReadToEnd();
-        }
-
-        public byte[] BitmapToJpegByteArray(Bitmap bitmap)
-        {
-            using (MemoryStream memoryStream = new MemoryStream())
-            {
-                // Save the Bitmap as JPEG to the MemoryStream
-                bitmap.Save(memoryStream, System.Drawing.Imaging.ImageFormat.Jpeg);
-                // Return the byte array
-                return memoryStream.ToArray();
-            }
-        }
-
-        public byte[] ImageToByteArray(System.Drawing.Image imageIn)
-        {
-            using (var ms = new MemoryStream())
-            {
-                imageIn.Save(ms, imageIn.RawFormat);
-                return ms.ToArray();
-            }
-        }
-
-        public static Bitmap ConvertTo24bpp(System.Drawing.Image img)
-        {
-            var bmp = new Bitmap(img.Width, img.Height, System.Drawing.Imaging.PixelFormat.Format24bppRgb);
-            using (var gr = Graphics.FromImage(bmp))
-                gr.DrawImage(img, new Rectangle(0, 0, img.Width, img.Height));
-            return bmp;
-        }
-
-        private ImageSource ConvertBitmapToImageSource(Bitmap bitmap)
-        {
-            using (MemoryStream memory = new MemoryStream())
-            {
-                bitmap.Save(memory, System.Drawing.Imaging.ImageFormat.Png);
-                return ImageSource.FromStream(() => new MemoryStream(memory.ToArray()));
-            }
-        }
-
-        private static System.Drawing.Image LoadImageWithExif(String filePath)
-        {
-            try
-            {
-                System.Drawing.Image image = System.Drawing.Image.FromFile(filePath);
-
-                // Check if the image has EXIF orientation data
-                if (image.PropertyIdList.Contains(0x0112))
-                {
-                    int orientation = image.GetPropertyItem(0x0112).Value[0];
-
-                    switch (orientation)
-                    {
-                        case 1:
-                            // Normal
-                            break;
-                        case 3:
-                            // Rotate 180
-                            image.RotateFlip(RotateFlipType.Rotate180FlipNone);
-                            break;
-                        case 6:
-                            // Rotate 90
-                            image.RotateFlip(RotateFlipType.Rotate90FlipNone);
-                            break;
-                        case 8:
-                            // Rotate 270
-                            image.RotateFlip(RotateFlipType.Rotate270FlipNone);
-                            break;
-                        default:
-                            // Do nothing
-                            break;
-                    }
-                }
-
-                return image;
-            }
-            catch (Exception e)
-            {
-                throw new Exception("Image null!");
-            }
-        }
-
-        public async Task<FileResult> OpenImage1(PickOptions options)
+        public async Task<FileResult> OpenImage(PickOptions options, int index)
         {
             try
             {
@@ -175,11 +93,22 @@ namespace FaceRecognition_.Net
                     if (result.FileName.EndsWith("jpg", StringComparison.OrdinalIgnoreCase) ||
                         result.FileName.EndsWith("png", StringComparison.OrdinalIgnoreCase))
                     {
-                        Image1.Source = ImageSource.FromFile(result.FullPath);
+                        switch (index)
+                        {
+                            case (int)IMAGE_INDEX.MATCH_1:
+                                Image1.Source = ImageSource.FromFile(result.FullPath);
+                                break;
+                            case (int)IMAGE_INDEX.MATCH_2:
+                                Image2.Source = ImageSource.FromFile(result.FullPath);
+                                break;
+                            case (int)IMAGE_INDEX.IDENTIFY:
+                                Image3.Source = ImageSource.FromFile(result.FullPath);
+                                break;
+                            default:
+                                return null;
+                        }
 
-                        // Read local image, convert it to byte array, and get image size
-                        image_path1 = result.FullPath;
-
+                        imagePath[index] = result.FullPath;
                     }
                 }
 
@@ -193,108 +122,21 @@ namespace FaceRecognition_.Net
             return null;
         }
 
-        public async Task<FileResult> OpenImage2(PickOptions options)
-        {
-            try
-            {
-                var result = await FilePicker.Default.PickAsync(options);
-                if (result != null)
-                {
-                    if (result.FileName.EndsWith("jpg", StringComparison.OrdinalIgnoreCase) ||
-                        result.FileName.EndsWith("png", StringComparison.OrdinalIgnoreCase))
-                    {
-                        Image2.Source = ImageSource.FromFile(result.FullPath);
-
-                        // Read local image, convert it to byte array, and get image size
-                        image_path2 = result.FullPath;
-
-                    }
-                }
-
-                return result;
-            }
-            catch (Exception ex)
-            {
-                // The user canceled or something went wrong
-            }
-
-            return null;
-        }
-
-        private async void OnClickedSelectFace1Btn(object sender, EventArgs e)
-        {
-
-            var customFileType = new FilePickerFileType(
-                new Dictionary<DevicePlatform, IEnumerable<string>>
-                {
-                    { DevicePlatform.iOS, new[] { "public.my.comic.extension" } }, // UTType values
-                    { DevicePlatform.Android, new[] { "application/comics" } }, // MIME type
-                    { DevicePlatform.WinUI, new[] { ".jpg", ".png" } }, // file extension
-                    { DevicePlatform.Tizen, new[] { "*/*" } },
-                    { DevicePlatform.macOS, new[] { "jpg", "png" } }, // UTType values
-                });
-
-            PickOptions options = new()
-            {
-                PickerTitle = "Please select a image file",
-                FileTypes = customFileType,
-            };
-
-            try
-            {
-                await OpenImage1(options);
-            }
-            catch (OperationCanceledException)
-            {
-                throw new OperationCanceledException("It was cancelled");
-            }
-
-        }
-
-        private async void OnClickedSelectFace2Btn(object sender, EventArgs e)
-        {
-
-            var customFileType = new FilePickerFileType(
-                new Dictionary<DevicePlatform, IEnumerable<string>>
-                {
-                    { DevicePlatform.iOS, new[] { "public.my.comic.extension" } }, // UTType values
-                    { DevicePlatform.Android, new[] { "application/comics" } }, // MIME type
-                    { DevicePlatform.WinUI, new[] { ".jpg", ".png" } }, // file extension
-                    { DevicePlatform.Tizen, new[] { "*/*" } },
-                    { DevicePlatform.macOS, new[] { "jpg", "png" } }, // UTType values
-                });
-
-            PickOptions options = new()
-            {
-                PickerTitle = "Please select a image file",
-                FileTypes = customFileType,
-            };
-
-            try
-            {
-                await OpenImage2(options);
-            }
-            catch (OperationCanceledException)
-            {
-                throw new OperationCanceledException("It was cancelled");
-            }
-
-        }
-        private int DetectFace(string image_path, DetectionResult[] detectionResult)
+        private int DetectFace(string imagePath, DetectionResult[] detectionResult)
         {
             System.Drawing.Image image = null;
             try
             {
-                image = LoadImageWithExif(image_path);
+                image = ImageProcess.LoadImageWithExif(imagePath);
                 if (image == null)
                     return 0;
             }
             catch (Exception)
             {
-                DisplayAlert("test", "Unknown Format!", "ok");
+                DisplayAlert("Error", "Unknown Format!", "Ok");
             }
 
-            Bitmap imgBmp = ConvertTo24bpp(image);
+            Bitmap imgBmp = ImageProcess.ConvertTo24bpp(image);
             BitmapData bitmapData = imgBmp.LockBits(new Rectangle(0, 0, imgBmp.Width, imgBmp.Height), ImageLockMode.ReadWrite, imgBmp.PixelFormat);
 
             int bytesPerPixel = Bitmap.GetPixelFormatSize(imgBmp.PixelFormat) / 8;
@@ -336,18 +178,46 @@ namespace FaceRecognition_.Net
                 }
                 return faceCount;
             }
-            
+
             return 0;
         }
 
-        private async void OnClickedCompareBtn(object sender, EventArgs e)
+        private async void OnOpenImage(object sender, EventArgs e)
         {
-            var button = sender as Button;
-            if (button != null)
+            int index = -1;
+            if (sender is Button button && button.CommandParameter is string param)
+                index = int.Parse(param);
+
+            var customFileType = new FilePickerFileType(
+                new Dictionary<DevicePlatform, IEnumerable<string>>
+                {
+                    { DevicePlatform.iOS, new[] { "public.my.comic.extension" } }, // UTType values
+                    { DevicePlatform.Android, new[] { "application/comics" } }, // MIME type
+                    { DevicePlatform.WinUI, new[] { ".jpg", ".png" } }, // file extension
+                    { DevicePlatform.Tizen, new[] { "*/*" } },
+                    { DevicePlatform.macOS, new[] { "jpg", "png" } }, // UTType values
+                });
+
+            PickOptions options = new()
             {
-                button.IsEnabled = false;
-                await Task.Delay(100);
+                PickerTitle = "Please select a image file",
+                FileTypes = customFileType,
+            };
+
+            try
+            {
+                await OpenImage(options, index);
             }
+            catch (OperationCanceledException)
+            {
+                throw new OperationCanceledException("It was cancelled");
+            }
+        }
+
+
+        private async void OnCompareFace(object sender, EventArgs e)
+        {
+            CompareBtn.IsEnabled = false;
 
             try
             {
@@ -359,44 +229,46 @@ namespace FaceRecognition_.Net
 
                 if (activateResult != 0)
                 {
-                    await DisplayAlert("error", "SDK Activation Failed!", "ok");
+                    await DisplayAlert("Error", "SDK Activation Failed!", "Ok");
                     return;
                 }
 
-                if (image_path1 == null || image_path2 == null)
+                string path1 = imagePath[(int)IMAGE_INDEX.MATCH_1];
+                string path2 = imagePath[(int)IMAGE_INDEX.MATCH_2];
+                if (path1 == null || path2 == null)
                 {
-                    await DisplayAlert("error", "Select Image Files!", "ok");
+                    await DisplayAlert("Error", "Select Image Files!", "Ok");
                     return;
                 }
 
                 DetectionResult[] detectionResult1 = new DetectionResult[1];
-                int cntFace1 = DetectFace(image_path1, detectionResult1);
+                int cntFace1 = DetectFace(path1, detectionResult1);
 
                 DetectionResult[] detectionResult2 = new DetectionResult[1];
-                int cntFace2 = DetectFace(image_path2, detectionResult2);
+                int cntFace2 = DetectFace(path2, detectionResult2);
 
                 if (cntFace1 == 0 && cntFace2 == 0)
-                    await DisplayAlert("error", "Can't detect faces", "ok");
+                    await DisplayAlert("Error", "Can't detect faces", "Ok");
                 else if (cntFace1 == 0)
-                    await DisplayAlert("error", "Can't detect face in Image1", "ok");
+                    await DisplayAlert("Error", "Can't detect face in Image1", "Ok");
                 else if (cntFace2 == 0)
-                    await DisplayAlert("error", "Can't detect face in Image2", "ok");
+                    await DisplayAlert("Error", "Can't detect face in Image2", "Ok");
                 else
                 {
                     var face1 = detectionResult1[0];
                     var face2 = detectionResult2[0];
                     float similarity = faceSDK.CalculateSimilarity(face1.feature, face2.feature, 128);
 
-                    Face1.Source = ConvertBitmapToImageSource(face1.bitmap);
-                    Face2.Source = ConvertBitmapToImageSource(face2.bitmap);
-                    if (similarity >= 80)
+                    Face1.Source = ImageProcess.ConvertBitmapToImageSource(face1.bitmap);
+                    Face2.Source = ImageProcess.ConvertBitmapToImageSource(face2.bitmap);
+                    if (similarity >= matchThreshold)
                         CompareResult.Source = ImageSource.FromFile("same.png");
                     else
                         CompareResult.Source = ImageSource.FromFile("different.png");
 
                     var face1Result = new
                     {
-                        box = new int[] { (int)face1.bbox.x1, (int)face1.bbox.y1, (int)face1.bbox.x2, (int)face1.bbox.y2 },
+                        box = string.Join(",", new int[] { (int)face1.bbox.x1, (int)face1.bbox.y1, (int)face1.bbox.x2, (int)face1.bbox.y2 }),
                         liveness = face1.bbox.liveness,
                         pitch = face1.bbox.pitch,
                         yaw = face1.bbox.yaw,
@@ -405,7 +277,7 @@ namespace FaceRecognition_.Net
 
                     var face2Result = new
                     {
-                        box = new int[] { (int)face2.bbox.x1, (int)face2.bbox.y1, (int)face2.bbox.x2, (int)face2.bbox.y2 },
+                        box = string.Join(",", new int[] { (int)face2.bbox.x1, (int)face2.bbox.y1, (int)face2.bbox.x2, (int)face2.bbox.y2 }),
                         liveness = face2.bbox.liveness,
                         pitch = face2.bbox.pitch,
                         yaw = face2.bbox.yaw,
@@ -420,23 +292,200 @@ namespace FaceRecognition_.Net
                     };
 
                     string jsonString = JsonSerializer.Serialize(result, new JsonSerializerOptions { WriteIndented = true });
-
                     ResultEditor.Text = jsonString;
+                    await Task.Delay(100);
+                    ResultEditor.CursorPosition = 0;
+                    ResultEditor.SelectionLength = 0;
                 }
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Exception: {ex}");
-                await DisplayAlert("Error", $"An error occurred: {ex.Message}", "OK");
+                await DisplayAlert("Error", $"An error occurred: {ex.Message}", "Ok");
             }
 
             finally
             {
-                if (button != null)
+                CompareBtn.IsEnabled = true;
+            }
+        }
+
+        public static byte[] FloatArrayToByteArray(float[] floatArray)
+        {
+            byte[] byteArray = new byte[floatArray.Length * sizeof(float)];
+            Buffer.BlockCopy(floatArray, 0, byteArray, 0, byteArray.Length);
+            return byteArray;
+        }
+
+        private async void OnEnroll(object sender, EventArgs e)
+        {
+            EnrollBtn.IsEnabled = false;
+            IdentifyBtn.IsEnabled = false;
+            await Task.Delay(100);
+            
+            try
+            {
+                if (activateResult != 0)
                 {
-                    button.IsEnabled = true;
+                    await DisplayAlert("Error", "SDK Activation Failed!", "Ok");
+                    return;
+                }
+
+                string path = imagePath[(int)IMAGE_INDEX.IDENTIFY];
+                if (path == null)
+                {
+                    await DisplayAlert("Error", "Select Image File!", "Ok");
+                    return;
+                }
+
+                DetectionResult[] detectionResult = new DetectionResult[10];
+                int cntFace = DetectFace(path, detectionResult);
+
+                if (cntFace == 0)
+                    await DisplayAlert("Error", "Can't detect faces", "Ok");
+                else
+                {
+                    for (int i = 0; i < cntFace; i++)
+                    {
+                        int randomNumber = RandomNumberGenerator.GetInt32(10000000, 99999999);
+                        User user = new User
+                        {
+                            name = "User " + randomNumber.ToString(),
+                            face = detectionResult[i].bitmap,  // Convert the byte array back to an image (implement ConvertToImage)
+                            image = ImageProcess.ConvertBitmapToImageSource(detectionResult[i].bitmap),
+                            templates = FloatArrayToByteArray(detectionResult[i].feature) // Assuming the template is stored as a byte array
+                        };
+
+                        Users.Add(user);
+                        dbManager.Insert(user);
+                    }
+                    await DisplayAlert("Info", $"Enrolled {cntFace} Users!", "Ok");
                 }
             }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Exception: {ex}");
+                await DisplayAlert("Error", $"An error occurred: {ex.Message}", "Ok");
+            }
+
+            finally
+            {
+                EnrollBtn.IsEnabled = true;
+                IdentifyBtn.IsEnabled = true;
+            }
+        }
+
+        public static float[] ByteArrayToFloatArray(byte[] byteArray)
+        {
+            if (byteArray == null || byteArray.Length % 4 != 0)
+                throw new ArgumentException("Invalid byte array length for float conversion");
+
+            int floatCount = byteArray.Length / 4;
+            float[] floatArray = new float[floatCount];
+
+            Buffer.BlockCopy(byteArray, 0, floatArray, 0, byteArray.Length);
+            return floatArray;
+
+        }
+        private async void OnIdentify(object sender, EventArgs e)
+        {
+            EnrollBtn.IsEnabled = false;
+            IdentifyBtn.IsEnabled = false;
+
+
+            try
+            {
+                DetectedFace.Source = ImageSource.FromFile("face.jpg");
+                IdentifiedFace.Source = ImageSource.FromFile("unknown.jpg");
+                IdentificationResultEditor.Text = "";
+                await Task.Delay(100);
+
+                if (activateResult != 0)
+                {
+                    await DisplayAlert("Error", "SDK Activation Failed!", "Ok");
+                    return;
+                }
+
+                string path = imagePath[(int)IMAGE_INDEX.IDENTIFY];
+                if (path == null)
+                {
+                    await DisplayAlert("Error", "Select Image File!", "Ok");
+                    return;
+                }
+
+                DetectionResult[] detectionResult = new DetectionResult[1];
+                int cntFace = DetectFace(path, detectionResult);
+
+                if (cntFace == 0)
+                    await DisplayAlert("Error", "Can't detect face", "Ok");
+                else
+                {
+                    var face = detectionResult[0];
+                    float maxSimiarlity = 0;
+                    User maxSimiarlityUser = null;
+                    DetectedFace.Source = ImageProcess.ConvertBitmapToImageSource(face.bitmap);
+                    foreach (User user in Users)
+                    {
+                        float similarity = faceSDK.CalculateSimilarity(face.feature, ByteArrayToFloatArray(user.templates), 128);
+
+                        if (similarity > maxSimiarlity)
+                        {
+                            maxSimiarlity = similarity;
+                            maxSimiarlityUser = user;
+                        }
+                    }
+
+                    if (maxSimiarlity >= matchThreshold)
+                    {
+                        IdentifiedFace.Source = maxSimiarlityUser.image;
+                        IdentificationResultEditor.Text = $"User Name: {maxSimiarlityUser.name}\nScore: {maxSimiarlity}";
+                    }
+                    else
+                        IdentificationResultEditor.Text = "Can't find matched user.";
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Exception: {ex}");
+                await DisplayAlert("Error", $"An error occurred: {ex.Message}", "Ok");
+            }
+
+            finally
+            {
+                EnrollBtn.IsEnabled = true;
+                IdentifyBtn.IsEnabled = true;
+            }
+        }
+
+        private async void OnDeleteUser(object sender, EventArgs e)
+        {
+            var imageButton = (ImageButton)sender;
+            imageButton.IsEnabled = false;
+            await Task.Delay(100);
+            var user = imageButton.CommandParameter as User;
+            if (user != null)
+            {
+                int index = Users.IndexOf(user);
+                if (index < 0) 
+                {
+                    imageButton.IsEnabled = true;
+                    return;
+                }
+                    
+                Users.RemoveAt(index);
+                dbManager.Delete(user.name);
+            }
+            imageButton.IsEnabled = true;
+        }
+
+        private async void OnDeleteAll(object sender, EventArgs e)
+        {
+            ResetBtn.IsEnabled = false;
+            await Task.Delay(100);
+            dbManager.DeleteAll();
+            Users.Clear();
+            await DisplayAlert("Info", "All Users are removed!", "Ok");
+            ResetBtn.IsEnabled = true;
         }
     }
 }

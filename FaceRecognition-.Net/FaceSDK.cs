@@ -147,11 +147,10 @@ namespace FaceSDK
             float[] feature2,
             int featureLength
         );
-
+        
         public float CalculateSimilarity(float[] feature1, float[] feature2, int featureLength)
         {
             return ttv_compare_feature_c_sharp(feature1, feature2, featureLength);
         }
-
     }
 }
