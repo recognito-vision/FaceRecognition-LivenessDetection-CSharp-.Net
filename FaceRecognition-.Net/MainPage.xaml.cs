@@ -148,7 +148,7 @@ namespace FaceRecognition_.Net
             imgBmp.UnlockBits(bitmapData);
 
             FaceBox[] faceBoxes = new FaceBox[detectionResult.Length];
-            int faceCount = faceSDK.DetectFace(pixels, imgBmp.Width, imgBmp.Height, bitmapData.Stride, faceBoxes, detectionResult.Length);
+            int faceCount = faceSDK.DetectFace(pixels, imgBmp.Width, imgBmp.Height, bitmapData.Stride, faceBoxes, detectionResult.Length, false);
 
             if (faceCount > 0)
             {

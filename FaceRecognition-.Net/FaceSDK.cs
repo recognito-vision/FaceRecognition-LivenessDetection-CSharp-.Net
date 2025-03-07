@@ -96,17 +96,18 @@ namespace FaceSDK
             int height,     // Height of the image
             int stride,     // Stride of the image
             [In, Out] FaceBox[] faceBoxes, // Array of FaceBox
-            int maxCount
+            int maxCount, 
+            bool liveness_flag
         );
 
-        public int DetectFace(byte[] rgbData, int width, int height, int stride, [In, Out] FaceBox[] faceBoxes, int faceBoxCount)
+        public int DetectFace(byte[] rgbData, int width, int height, int stride, [In, Out] FaceBox[] faceBoxes, int faceBoxCount, bool liveness_flag)
         {
             IntPtr imgPtr = Marshal.AllocHGlobal(rgbData.Length);
             Marshal.Copy(rgbData, 0, imgPtr, rgbData.Length);
 
             try
             {
-                int ret = ttv_detect_face_c_sharp(imgPtr, width, height, stride, faceBoxes, faceBoxCount);
+                int ret = ttv_detect_face_c_sharp(imgPtr, width, height, stride, faceBoxes, faceBoxCount, liveness_flag);
                 return ret;
             }
             finally
