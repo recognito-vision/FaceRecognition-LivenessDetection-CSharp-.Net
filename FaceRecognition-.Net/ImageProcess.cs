@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 
 namespace FaceRecognition_.Net
 {
@@ -81,6 +82,17 @@ namespace FaceRecognition_.Net
                 bitmap.Save(memory, System.Drawing.Imaging.ImageFormat.Png);
                 return ImageSource.FromStream(() => new MemoryStream(memory.ToArray()));
             }
+        }
+
+        public static Bitmap ResizeImage(Bitmap sourceImage, int width, int height)
+        {
+            Bitmap resizedImage = new Bitmap(width, height);
+            using (Graphics g = Graphics.FromImage(resizedImage))
+            {
+                g.InterpolationMode = InterpolationMode.HighQualityBicubic;
+                g.DrawImage(sourceImage, 0, 0, width, height);
+            }
+            return resizedImage;
         }
     }
 }

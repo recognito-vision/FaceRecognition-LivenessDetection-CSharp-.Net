@@ -174,7 +174,8 @@ namespace FaceRecognition_.Net
                     if (y + height > imgBmp.Height) height = imgBmp.Height - y;
 
                     Rectangle cropArea = new Rectangle(x, y, width, height);
-                    detectionResult[i].bitmap = imgBmp.Clone(cropArea, imgBmp.PixelFormat);
+                    Bitmap croppedBitmap = imgBmp.Clone(cropArea, imgBmp.PixelFormat);
+                    detectionResult[i].bitmap = ImageProcess.ResizeImage(croppedBitmap, 200, 200);
                 }
                 return faceCount;
             }
