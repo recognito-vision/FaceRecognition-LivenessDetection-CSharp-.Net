@@ -24,8 +24,8 @@
 <!--- Clone our [**Hugging Face space**](https://huggingface.co/recognito) for your IDV project setup.-->
 <br/>
 
-# On-Premise Face Recognition, Liveness Detection, Face Attribute Analysis SDK Demo (Windows Server)
-Welcome to our Face SDK Demos repository! Here you will find demos showcasing the capabilities of our on-premise Face SDKs, including face recognition, liveness detection, and face attribute analysis. Our SDK is designed to work seamlessly on **Windows** Server platforms and can be integrated into various systems such as **eKYC** solutions and **CCTV** systems.
+# On-Premise Face Recognition, Liveness Detection, Face Attribute Analysis .Net SDK Demo (Windows C#)
+Welcome to our Face SDK Demos repository! Here you will find demos showcasing the capabilities of our on-premise Face SDKs, including face recognition, liveness detection, and face attribute analysis. Our SDK is designed to work seamlessly on **Windows** Server platforms and can be integrated into various systems such as **eKYC** solutions.
 
 Our [**Product List**](https://github.com/recognito-vision/Product-List/) for ID verification.
 
@@ -36,13 +36,6 @@ Our [**Product List**](https://github.com/recognito-vision/Product-List/) for ID
 - **Face Recognition:** Identify and verify individuals by comparing their facial features.
 - **Liveness Detection:** Determine whether a face is live or spoofed to prevent fraud in authentication processes.
 - **Face Attribute Analysis:** Extract facial attributes such as age, gender and more from facial images for demographic analysis.
-
-## <img src="https://github.com/recognito-vision/Linux-FaceRecognition-FaceLivenessDetection/assets/153883841/c15b7c1d-346f-4b0b-ad1e-c65882b14d27" alt="face recognition, liveness detection SDK demo description" width="25">  Windows Face SDK Demo Description
-  | No.      | Demo | Description |
-  |:------------------:|------------------|------------------|
-  | 1        | [Flask Demo](https://github.com/recognito-vision/Windows-FaceRecognition-FaceLivenessDetection/tree/main/flask)    | Flask Server Demo for 1:1 verification, liveness detection |
-  | 2        | [Gradio Demo](https://github.com/recognito-vision/Windows-FaceRecognition-FaceLivenessDetection/tree/main/gradio)    | Gradio UI Demo for 1:1 verification, liveness detection |
-  | 3        | [Video Surveillance Demo](https://github.com/recognito-vision/Windows-FaceRecognition-FaceLivenessDetection/tree/main/video_surveillance_demo)    | Video Surveillance Demo for 1:N identification |
 
 ## <img src="https://github.com/recognito-vision/Face-SDK-Windows-Demo/assets/153883841/8a641c1e-cd1b-4336-9bad-ceffd580daaf" alt="system" width="25">  System Requirements
  - **Windows System:** Windows 10 or later
@@ -55,10 +48,8 @@ Our [**Product List**](https://github.com/recognito-vision/Product-List/) for ID
 1. Clone this repository to your local machine:
 
     ```
-    git clone https://github.com/recognito-vision/Windows-FaceRecognition-FaceLivenessDetection.git
-    ```
-   Download `engine` folder from [Here](https://drive.google.com/file/d/1GkpMJjMYCwtGpdtuYX2LKYb8VkrlOJqs/view?usp=drive_link) and extract to `Windows-FaceRecognition-FaceLivenessDetection` folder.
-   
+    git clone https://github.com/recognito-vision/FaceRecognition-LivenessDetection-.Net.git
+    ``` 
 2. Install `python-3.8.9.exe`,  `VC_redist.2013.exe`, `VC_redist.2015-2022.exe` files from `dependency` folder.
 
    **Important Note**: When install `python-3.8.9.exe`, have to tick the `Add Python3.8 to PATH` option.
