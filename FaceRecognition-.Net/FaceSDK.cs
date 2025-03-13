@@ -25,6 +25,9 @@ namespace FaceSDK
         public float[] landmark_68; // Array of 136 floats
         public float liveness;
         public float yaw, roll, pitch;
+        public float face_occlusion;
+        public float left_eye, right_eye;
+        public float face_quality;
 
         //[MarshalAs(UnmanagedType.ByValArray, SizeConst = 2048)]
 
@@ -34,6 +37,9 @@ namespace FaceSDK
             landmark_68 = new float[68 * 2];
             liveness = 0;
             yaw = roll = pitch = 0;
+            face_occlusion = 0;
+            left_eye = right_eye = 0;
+            face_quality = 0;
         }
     };
 
@@ -97,17 +103,19 @@ namespace FaceSDK
             int stride,     // Stride of the image
             [In, Out] FaceBox[] faceBoxes, // Array of FaceBox
             int maxCount, 
-            bool liveness_flag
+            bool check_liveness,
+            bool check_eye_closeness, 
+            bool check_face_occlusion
         );
 
-        public int DetectFace(byte[] rgbData, int width, int height, int stride, [In, Out] FaceBox[] faceBoxes, int faceBoxCount, bool liveness_flag)
+        public int DetectFace(byte[] rgbData, int width, int height, int stride, [In, Out] FaceBox[] faceBoxes, int faceBoxCount, bool check_liveness, bool check_eye_closeness, bool check_face_occlusion)
         {
             IntPtr imgPtr = Marshal.AllocHGlobal(rgbData.Length);
             Marshal.Copy(rgbData, 0, imgPtr, rgbData.Length);
 
             try
             {
-                int ret = ttv_detect_face_c_sharp(imgPtr, width, height, stride, faceBoxes, faceBoxCount, liveness_flag);
+                int ret = ttv_detect_face_c_sharp(imgPtr, width, height, stride, faceBoxes, faceBoxCount, check_liveness, check_eye_closeness, check_face_occlusion);
                 return ret;
             }
             finally

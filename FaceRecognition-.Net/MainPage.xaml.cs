@@ -14,6 +14,7 @@ using System.Collections.ObjectModel;
 using System.Security.Cryptography;
 using Microsoft.Maui.ApplicationModel;
 using System.Data.Entity.Core.Metadata.Edm;
+using Microsoft.Maui.Layouts;
 
 enum IMAGE_INDEX
 {
@@ -21,6 +22,12 @@ enum IMAGE_INDEX
     MATCH_2 = 1,
     IDENTIFY = 2
 }
+
+enum FACE_STATE
+{
+    NOT_FRONT, SPOOFED_FACE, FACE_OCCLUDED, EYE_CLOSED, LOW_IMAGE_QUALITY, STATE_OK
+}
+
 
 public struct DetectionResult
 {
@@ -47,7 +54,12 @@ namespace FaceRecognition_.Net
         private DBManager dbManager = new DBManager();
         public ObservableCollection<User> Users { get; set; }
 
+        private bool check_liveness = false;
+        private bool check_eye_closeness = true;
+        private bool check_face_occlusion = true;
+
         private int matchThreshold = 80;
+
         public MainPage()
         {
             InitializeComponent();
@@ -122,6 +134,26 @@ namespace FaceRecognition_.Net
             return null;
         }
 
+        private FACE_STATE CheckFace(FaceBox box, bool check_liveness, bool check_eye_closeness, bool check_face_occlusion)
+        {
+            if (Math.Abs(box.yaw) > 10.0 || Math.Abs(box.roll) > 10.0 || Math.Abs(box.pitch) > 10.0)
+                return FACE_STATE.NOT_FRONT;
+
+            if (check_liveness && box.liveness < 0.7)
+                return FACE_STATE.SPOOFED_FACE;
+
+            if (check_face_occlusion && box.face_occlusion > 0.5)
+                return FACE_STATE.FACE_OCCLUDED;
+
+            if (check_eye_closeness && (box.left_eye > 0.5 || box.right_eye > 0.5))
+                return FACE_STATE.EYE_CLOSED;
+
+            if (box.face_quality < 0.5)
+                return FACE_STATE.LOW_IMAGE_QUALITY;
+
+            return FACE_STATE.STATE_OK;
+        }
+
         private int DetectFace(string imagePath, DetectionResult[] detectionResult)
         {
             System.Drawing.Image image = null;
@@ -148,7 +180,7 @@ namespace FaceRecognition_.Net
             imgBmp.UnlockBits(bitmapData);
 
             FaceBox[] faceBoxes = new FaceBox[detectionResult.Length];
-            int faceCount = faceSDK.DetectFace(pixels, imgBmp.Width, imgBmp.Height, bitmapData.Stride, faceBoxes, detectionResult.Length, false);
+            int faceCount = faceSDK.DetectFace(pixels, imgBmp.Width, imgBmp.Height, bitmapData.Stride, faceBoxes, detectionResult.Length, check_liveness, check_eye_closeness, check_face_occlusion);
 
             if (faceCount > 0)
             {
@@ -270,19 +302,27 @@ namespace FaceRecognition_.Net
                     var face1Result = new
                     {
                         box = string.Join(",", new int[] { (int)face1.bbox.x1, (int)face1.bbox.y1, (int)face1.bbox.x2, (int)face1.bbox.y2 }),
-                        liveness = face1.bbox.liveness,
-                        pitch = face1.bbox.pitch,
-                        yaw = face1.bbox.yaw,
-                        roll = face1.bbox.roll
+                        liveness = Math.Round(face1.bbox.liveness, 3),
+                        pitch = Math.Round(face1.bbox.pitch, 3),
+                        yaw = Math.Round(face1.bbox.yaw, 3),
+                        roll = Math.Round(face1.bbox.roll, 3),
+                        left_eye = Math.Round(face1.bbox.left_eye, 3),
+                        right_eye = Math.Round(face1.bbox.right_eye, 3),
+                        occlusion = Math.Round(face1.bbox.face_occlusion, 3),
+                        quality = Math.Round(face1.bbox.face_quality, 3)
                     };
 
                     var face2Result = new
                     {
                         box = string.Join(",", new int[] { (int)face2.bbox.x1, (int)face2.bbox.y1, (int)face2.bbox.x2, (int)face2.bbox.y2 }),
-                        liveness = face2.bbox.liveness,
-                        pitch = face2.bbox.pitch,
-                        yaw = face2.bbox.yaw,
-                        roll = face2.bbox.roll
+                        liveness = Math.Round(face2.bbox.liveness, 3),
+                        pitch = Math.Round(face2.bbox.pitch, 3),
+                        yaw = Math.Round(face2.bbox.yaw, 3),
+                        roll = Math.Round(face2.bbox.roll, 3),
+                        left_eye = Math.Round(face2.bbox.left_eye, 3),
+                        right_eye = Math.Round(face2.bbox.right_eye, 3),
+                        occlusion = Math.Round(face2.bbox.face_occlusion, 3),
+                        quality = Math.Round(face2.bbox.face_quality, 3)
                     };
 
                     var result = new
@@ -339,28 +379,39 @@ namespace FaceRecognition_.Net
                     return;
                 }
 
-                DetectionResult[] detectionResult = new DetectionResult[10];
+                DetectionResult[] detectionResult = new DetectionResult[1];
                 int cntFace = DetectFace(path, detectionResult);
 
                 if (cntFace == 0)
                     await DisplayAlert("Error", "Can't detect faces", "Ok");
                 else
                 {
-                    for (int i = 0; i < cntFace; i++)
+                    DetectionResult det = detectionResult[0];
+                    FACE_STATE state = CheckFace(det.bbox, check_liveness, check_eye_closeness, check_face_occlusion);
+                    if (state != FACE_STATE.STATE_OK)
+                    {
+                        string[] FACE_STATE_STRING =
+                        {
+                            "Not Front Face!", "Spoof Face!", "Face Occluded!", "Eye Closed!", "Low Image Quality!", "Good Face Image!"
+                        };
+                        await DisplayAlert("Error", $"{FACE_STATE_STRING[((int)state)]}", "Ok");
+                    }
+                    else
                     {
                         int randomNumber = RandomNumberGenerator.GetInt32(10000000, 99999999);
                         User user = new User
                         {
                             name = "User " + randomNumber.ToString(),
-                            face = detectionResult[i].bitmap,  // Convert the byte array back to an image (implement ConvertToImage)
-                            image = ImageProcess.ConvertBitmapToImageSource(detectionResult[i].bitmap),
-                            templates = FloatArrayToByteArray(detectionResult[i].feature) // Assuming the template is stored as a byte array
+                            face = det.bitmap,  // Convert the byte array back to an image (implement ConvertToImage)
+                            image = ImageProcess.ConvertBitmapToImageSource(det.bitmap),
+                            templates = FloatArrayToByteArray(det.feature) // Assuming the template is stored as a byte array
                         };
 
                         Users.Add(user);
                         dbManager.Insert(user);
+
+                        await DisplayAlert("Info", $"Enrolled {user.name}!", "Ok");
                     }
-                    await DisplayAlert("Info", $"Enrolled {cntFace} Users!", "Ok");
                 }
             }
             catch (Exception ex)
