@@ -67,21 +67,22 @@ Our [**Product List**](https://github.com/recognito-vision/Product-List/) for ID
         &nbsp;&nbsp;&nbsp;&nbsp;<a target="_blank" href="https://join.slack.com/t/recognito-workspace/shared_invite/zt-2d4kscqgn-"><img src="https://img.shields.io/badge/slack-recognito__workspace-blue.svg?logo=slack " alt="www.recognito.vision"></a>
     </div>
 - Copy the `license.txt` license file received from us to the `root` folder.
-     ![license](https://github.com/user-attachments/assets/35520815-3477-49f5-9971-6ed4e565594a)
+  
+     ![license](https://github.com/user-attachments/assets/d5002c60-9c8d-4512-a06c-4cb5a983e46b)
 
 ## <img src="https://github.com/recognito-vision/Linux-FaceRecognition-FaceLivenessDetection/assets/153883841/7ed1f28b-bb29-4c83-809c-015e2f8e38ad" alt="install" width="25">  Running Demo
 
   <p align="center">
-      <img src="https://github.com/user-attachments/assets/3c2fd1ff-f1be-4b4e-99d9-a5b62f5142bf" width="48%" />
-      <img src="https://github.com/user-attachments/assets/810232d2-1eb3-44af-a1e9-5488e81d1953" width="48%" />
+      <img src="https://github.com/user-attachments/assets/3c2fd1ff-f1be-4b4e-99d9-a5b62f5142bf" width="90%" />
+      <img src="https://github.com/user-attachments/assets/810232d2-1eb3-44af-a1e9-5488e81d1953" width="90%" />
   </p>
   <p align="center">
-      <img src="https://github.com/user-attachments/assets/dab3cbb8-45b4-470a-a040-b3a6a69e7e07" width="48%" />
-      <img src="https://github.com/user-attachments/assets/87204dc6-6791-4ee4-9f82-39b0add34ca3" width="48%" />
+      <img src="https://github.com/user-attachments/assets/dab3cbb8-45b4-470a-a040-b3a6a69e7e07" width="90%" />
+      <img src="https://github.com/user-attachments/assets/87204dc6-6791-4ee4-9f82-39b0add34ca3" width="90%" />
   </p>
   <p align="center">
-      <img src="https://github.com/user-attachments/assets/bc6f30d9-5640-408d-b036-dfcb9f7fa26f" width="48%" />
-      <img src="https://github.com/user-attachments/assets/7415eee7-6495-4cc3-a567-7eb88c1b43d8" width="48%" />
+      <img src="https://github.com/user-attachments/assets/bc6f30d9-5640-408d-b036-dfcb9f7fa26f" width="90%" />
+      <img src="https://github.com/user-attachments/assets/7415eee7-6495-4cc3-a567-7eb88c1b43d8" width="90%" />
   </p>
     
 ## <img src="https://github.com/recognito-vision/Linux-FaceRecognition-FaceLivenessDetection/assets/153883841/78c5efee-15f3-4406-ab4d-13fd1182d20c" alt="contact" width="25">  Support
