@@ -21,25 +21,32 @@ namespace FaceSDK
     public struct FaceBox
     {
         public float x1, y1, x2, y2;
+        public int age;
+        public int gender;
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = 68 * 2)]
         public float[] landmark_68; // Array of 136 floats
         public float liveness;
         public float yaw, roll, pitch;
         public float face_occlusion;
         public float left_eye, right_eye;
+        public float mouth_opened;
         public float face_quality;
+        public float face_luminance;
 
         //[MarshalAs(UnmanagedType.ByValArray, SizeConst = 2048)]
 
         public FaceBox()
         {
             x1 = x2 = y1 = y2 = 0;
+            age = gender = 0;
             landmark_68 = new float[68 * 2];
             liveness = 0;
             yaw = roll = pitch = 0;
             face_occlusion = 0;
             left_eye = right_eye = 0;
+            mouth_opened = 0;
             face_quality = 0;
+            face_luminance = 0;
         }
     };
 
@@ -51,13 +58,13 @@ namespace FaceSDK
         }
 
         [DllImport("ttvfaceengine.dll", CallingConvention = CallingConvention.Cdecl)]
-        public static extern IntPtr ttv_get_hwid();
+        public static extern IntPtr ttv_get_hwid(int machineType);
 
-        public String GetHardwareId()
+        public String GetHardwareId(int machineType)
         {
             try
             {
-                IntPtr machineCode = ttv_get_hwid();
+                IntPtr machineCode = ttv_get_hwid(machineType);
                 if (machineCode == null)
                     throw new Exception("Failed to retrieve machine code.");
 
@@ -71,14 +78,14 @@ namespace FaceSDK
         }
 
         [DllImport("ttvfaceengine.dll", CallingConvention = CallingConvention.Cdecl)]
-        public static extern int ttv_set_activation(IntPtr license);
+        public static extern int ttv_set_activation(IntPtr license, int machineType);
 
-        public int Activate(String license)
+        public int Activate(String license, int machineType)
         {
             IntPtr ptr = Marshal.StringToHGlobalAnsi(license);
             try
             {
-                return ttv_set_activation(ptr);
+                return ttv_set_activation(ptr, machineType);
             }
             finally
             {
@@ -105,17 +112,19 @@ namespace FaceSDK
             int maxCount, 
             bool check_liveness,
             bool check_eye_closeness, 
-            bool check_face_occlusion
+            bool check_face_occlusion,
+            bool check_mouth_opened, 
+            bool estimate_age_gender
         );
 
-        public int DetectFace(byte[] rgbData, int width, int height, int stride, [In, Out] FaceBox[] faceBoxes, int faceBoxCount, bool check_liveness, bool check_eye_closeness, bool check_face_occlusion)
+        public int DetectFace(byte[] rgbData, int width, int height, int stride, [In, Out] FaceBox[] faceBoxes, int faceBoxCount, bool check_liveness, bool check_eye_closeness, bool check_face_occlusion, bool check_mouth_opened, bool estimate_age_gender)
         {
             IntPtr imgPtr = Marshal.AllocHGlobal(rgbData.Length);
             Marshal.Copy(rgbData, 0, imgPtr, rgbData.Length);
 
             try
             {
-                int ret = ttv_detect_face_c_sharp(imgPtr, width, height, stride, faceBoxes, faceBoxCount, check_liveness, check_eye_closeness, check_face_occlusion);
+                int ret = ttv_detect_face_c_sharp(imgPtr, width, height, stride, faceBoxes, faceBoxCount, check_liveness, check_eye_closeness, check_face_occlusion, check_mouth_opened, estimate_age_gender);
                 return ret;
             }
             finally

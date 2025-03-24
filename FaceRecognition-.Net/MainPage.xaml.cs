@@ -57,6 +57,8 @@ namespace FaceRecognition_.Net
         private bool check_liveness = false;
         private bool check_eye_closeness = true;
         private bool check_face_occlusion = true;
+        private bool check_mouth_opened = true;
+        private bool estimate_age_gender = true;
 
         private int matchThreshold = 80;
 
@@ -64,14 +66,14 @@ namespace FaceRecognition_.Net
         {
             InitializeComponent();
 
-            HWIDEntry.Text = faceSDK.GetHardwareId();
+            HWIDEntry.Text = faceSDK.GetHardwareId(0);
             
             string licensePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "license.txt");
 
             if (File.Exists(licensePath))
             {
                 string licenseText = File.ReadAllText(licensePath);
-                activateResult = faceSDK.Activate(licenseText);
+                activateResult = faceSDK.Activate(licenseText, 0);
             }
             else
                 ActivationStatusEntry.Text = "Can't find license file!";
@@ -180,7 +182,7 @@ namespace FaceRecognition_.Net
             imgBmp.UnlockBits(bitmapData);
 
             FaceBox[] faceBoxes = new FaceBox[detectionResult.Length];
-            int faceCount = faceSDK.DetectFace(pixels, imgBmp.Width, imgBmp.Height, bitmapData.Stride, faceBoxes, detectionResult.Length, check_liveness, check_eye_closeness, check_face_occlusion);
+            int faceCount = faceSDK.DetectFace(pixels, imgBmp.Width, imgBmp.Height, bitmapData.Stride, faceBoxes, detectionResult.Length, check_liveness, check_eye_closeness, check_face_occlusion, check_mouth_opened, estimate_age_gender);
 
             if (faceCount > 0)
             {
@@ -303,26 +305,32 @@ namespace FaceRecognition_.Net
                     {
                         box = string.Join(",", new int[] { (int)face1.bbox.x1, (int)face1.bbox.y1, (int)face1.bbox.x2, (int)face1.bbox.y2 }),
                         liveness = Math.Round(face1.bbox.liveness, 3),
+                        age = face1.bbox.age,
+                        gender = (face1.bbox.gender == 0) ? "Male" : "Female",
                         pitch = Math.Round(face1.bbox.pitch, 3),
                         yaw = Math.Round(face1.bbox.yaw, 3),
                         roll = Math.Round(face1.bbox.roll, 3),
                         left_eye = Math.Round(face1.bbox.left_eye, 3),
                         right_eye = Math.Round(face1.bbox.right_eye, 3),
                         occlusion = Math.Round(face1.bbox.face_occlusion, 3),
-                        quality = Math.Round(face1.bbox.face_quality, 3)
+                        quality = Math.Round(face1.bbox.face_quality, 3),
+                        luminance = Math.Round(face1.bbox.face_luminance, 3)
                     };
 
                     var face2Result = new
                     {
                         box = string.Join(",", new int[] { (int)face2.bbox.x1, (int)face2.bbox.y1, (int)face2.bbox.x2, (int)face2.bbox.y2 }),
                         liveness = Math.Round(face2.bbox.liveness, 3),
+                        age = face2.bbox.age,
+                        gender = (face2.bbox.gender == 0) ? "Male" : "Female",
                         pitch = Math.Round(face2.bbox.pitch, 3),
                         yaw = Math.Round(face2.bbox.yaw, 3),
                         roll = Math.Round(face2.bbox.roll, 3),
                         left_eye = Math.Round(face2.bbox.left_eye, 3),
                         right_eye = Math.Round(face2.bbox.right_eye, 3),
                         occlusion = Math.Round(face2.bbox.face_occlusion, 3),
-                        quality = Math.Round(face2.bbox.face_quality, 3)
+                        quality = Math.Round(face2.bbox.face_quality, 3),
+                        luminance = Math.Round(face2.bbox.face_luminance, 3)
                     };
 
                     var result = new
